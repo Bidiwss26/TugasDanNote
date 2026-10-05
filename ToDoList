@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>To-Do List Simpel</title>
+  <style>
+    :root {
+      --bg-body: #f4f6f8;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-input: #cbd5e1;
+      --bg-input: #ffffff;
+      --border-dashed: #e2e8f0;
+      --btn-bg: #2563eb;
+      --btn-active: #1d4ed8;
+      --btn-danger: #ef4444;
+      --btn-theme: #e2e8f0;
+      --btn-theme-text: #0f172a;
+    }
+
+    body.dark {
+      --bg-body: #0b0f19;
+      --bg-card: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-input: #334155;
+      --bg-input: #0f172a;
+      --border-dashed: #334155;
+      --btn-bg: #3b82f6;
+      --btn-active: #2563eb;
+      --btn-danger: #f87171;
+      --btn-theme: #334155;
+      --btn-theme-text: #f8fafc;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-body);
+      color: var(--text-main);
+      margin: 0;
+      padding: 15px;
+      display: flex;
+      justify-content: center;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .card {
+      background: var(--bg-card);
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      box-sizing: border-box;
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--text-main);
+    }
+
+    .btn-theme {
+      background: var(--btn-theme);
+      color: var(--btn-theme-text);
+      border: none;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: block;
+      margin-top: 10px;
+      margin-bottom: 4px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-input);
+      background: var(--bg-input);
+      color: var(--text-main);
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+
+    input:focus {
+      outline: 2px solid var(--btn-bg);
+    }
+
+    .btn-save {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      background: var(--btn-bg);
+      color: white;
+      border: none;
+      font-weight: bold;
+      font-size: 1rem;
+      margin-top: 14px;
+      cursor: pointer;
+    }
+
+    .btn-save:active {
+      background: var(--btn-active);
+    }
+
+    .list-container {
+      margin-top: 20px;
+      border-top: 2px dashed var(--border-dashed);
+      padding-top: 14px;
+    }
+
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-dashed);
+    }
+
+    .item-text {
+      font-weight: 500;
+      font-size: 0.95rem;
+      word-break: break-word;
+      padding-right: 10px;
+    }
+
+    .btn-del {
+      background: transparent;
+      color: var(--btn-danger);
+      border: 1px solid var(--btn-danger);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .loading-msg {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      padding: 15px 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header-bar">
+    <h2>Daftar Tugas (To-Do)</h2>
+    <button class="btn-theme" onclick="toggleTheme()" id="theme-btn">🌙 Gelap</button>
+  </div>
+
+  <label>Tugas / Kegiatan Baru:</label>
+  <input type="text" id="tugas" placeholder="Contoh: servis">
+
+  <button class="btn-save" id="btn-submit" onclick="tambahTugas()">+ Tambah Tugas</button>
+
+  <div class="list-container">
+    <div id="list-todo">
+      <div class="loading-msg">Mengambil data dari Cloud...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // MENGGUNAKAN GOOGLE APPS SCRIPT DATABASE YANG SAMA
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxR8sFdbJNWwvwpXD7zSI_RGrHxc0O_fs6FMDdtGn3Y1Pub3BxVVpLwFgMiB9IIyFXU/exec";
+
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark');
+    document.getElementById('theme-btn').innerText = '☀️ Terang';
+  }
+
+  function toggleTheme() {
+    const isDark = document.body.classList.toggle('dark');
+    document.getElementById('theme-btn').innerText = isDark ? '☀️ Terang' : '🌙 Gelap';
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }
+
+  let todos = [];
+  muatDataCloud();
+
+  async function muatDataCloud() {
+    const container = document.getElementById('list-todo');
+    container.innerHTML = '<div class="loading-msg">Mengambil data dari Cloud...</div>';
+    
+    try {
+      const res = await fetch(SCRIPT_URL);
+      const rawData = await res.json();
+      
+      // Mengambil item khusus to-do (berdasarkan ID khusus / flag)
+      todos = rawData.filter(item => String(item.id).startsWith("todo_"));
+      tampilkanList();
+    } catch (err) {
+      container.innerHTML = '<div class="loading-msg" style="color: red;">Gagal memuat data. Periksa koneksi/URL script.</div>';
+    }
+  }
+
+  async function tambahTugas() {
+    const inputElem = document.getElementById('tugas');
+    const teksTugas = inputElem.value.trim();
+
+    if (!teksTugas) return;
+
+    const newItem = {
+      action: "add",
+      id: "todo_" + Date.now(), // ID khusus To-Do biar gak nyampur sama laporan keuangan
+      ket: teksTugas,
+      nominal: 0
+    };
+
+    // 1. Tampilkan langsung di layar (Instan!)
+    todos.push({ id: newItem.id, ket: newItem.ket });
+    tampilkanList();
+
+    // Reset input
+    inputElem.value = '';
+
+    // 2. Kirim ke Cloud di background
+    try {
+      await fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify(newItem)
+      });
+    } catch (err) {
+      alert("Gagal menyimpan ke cloud, silakan refresh.");
+    }
+  }
+
+  async function hapusTugas(id) {
+    if(!confirm("Hapus tugas ini?")) return;
+
+    // 1. Hapus langsung dari layar (Instan!)
+    todos = todos.filter(item => item.id !== id);
+    tampilkanList();
+
+    // 2. Hapus di Cloud via background
+    try {
+      await fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "delete", id: id })
+      });
+    } catch (err) {
+      alert("Gagal menghapus di cloud!");
+    }
+  }
+
+  function tampilkanList() {
+    const container = document.getElementById('list-todo');
+
+    if (!todos || todos.length === 0) {
+      container.innerHTML = '<div class="loading-msg">Belum ada tugas tersimpan.</div>';
+      return;
+    }
+
+    let html = '';
+    todos.forEach(item => {
+      html += `
+        <div class="item-row">
+          <span class="item-text">${item.ket}</span>
+          <button class="btn-del" onclick="hapusTugas('${item.id}')">Hapus</button>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  }
+</script>
+
+</body>
+</html>
